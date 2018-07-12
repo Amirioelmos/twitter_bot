@@ -1,0 +1,43 @@
+version: '3.0'
+services:
+  pg-worldcup_1:
+    image: registry.bale.ai:2443/postgres:9.5
+    container_name: pg-worldcup_1
+    environment:
+      - POSTGRES_USER=ehsan
+      - POSTGRES_PASSWORD=ehsan1379
+      - POSTGRES_DB=postgres
+      - TZ=Asia/Tehran
+    volumes:
+      - /home/elenoon/docker/volumes/pg-worldcup-1/postgres/:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+
+  web:
+    image: test_world_cup
+    environment:
+     #PostgreSQL Config
+     - PG_PORT=
+     - PG_USER=
+     - PG_PASS=
+     - PG_HOST=192.168.3.174
+     - PG_DB_NAME=
+     #Receipt Config
+#     - BASE_URL=wss://api.bale.ai/v1/bots/
+#     - BOT_ID=worldcup
+     - BOT_TOKEN=
+     - TIME_SLEEP=1
+     - MAX_TRY_TIMES=3
+     - SDK_USE_GRAYLOG=2    # 0: use graylog, 1:print to output, 2:both 0 and 1
+     - LOG_SOURCE=
+     - SDK_GRAYLOG_HOST=
+     - SDK_GRAYLOG_PORT=
+     - SDK_LOG_LEVEL= # FATAL = CRITICAL = 50, ERROR = 40,  WARN = WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
+     # SDK_LOG_FACILITY_NAME & BOT_LOG_FACILITY_NAME should be different
+     - SDK_LOG_FACILITY_NAME=worldcup_1_facility
+     - ROWS_PER_QUERY=10
+     - SEND_DELAY=2
+     - ADMIN_USER_ID=1157162171
+     - CHANNEL_USER_ID=980604623
+     - CHANNEL_ACCESS_HASH=3768034619353982124
+     - TZ=Asia/Tehran
