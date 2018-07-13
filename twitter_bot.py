@@ -8,10 +8,10 @@ from balebot.updater import Updater
 from balebot.utils.logger import Logger
 from bot_config import BotConfig
 from constant.message import ReadyMessage, TMessage, LogMessage, Regex
-from db.db_handler import create_all_table, insert_user
+from db.db_handler import create_all_table, insert_user, get_user
 import asyncio
 
-from twitter_api import get_verify_link, tweet_api
+from twitter_api import get_verify_link, send_tweet_api, final_verify
 
 updater = Updater(token=BotConfig.bot_token,
                   loop=asyncio.get_event_loop())
@@ -71,7 +71,9 @@ def start_conversation(bot, update):
                                                         ])
 
 
+@dispatcher.command_handler(["/adduser"])
 def add_user(bot, update):
+    dispatcher.clear_conversation_data(update)
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
     text_message = TextMessage(ReadyMessage.send_name)
@@ -132,11 +134,17 @@ def verify(bot, update):
     auth = dispatcher.get_conversation_data(update, "auth")
     oauth_verifier = update.get_effective_message().text
     access_hash = user_peer.access_hash
-    phone_number = update.get_effective_message().text
     name = dispatcher.get_conversation_data(update, "name")
+    phone_number = dispatcher.get_conversation_data(update, "phone_number")
+    print(auth['oauth_token'])
+    print(auth['oauth_token_secret'])
+
+    final_dict = final_verify(oauth_verifier=oauth_verifier, oauth_token=auth['oauth_token'],
+                              oauth_token_secret=auth['oauth_token_secret'])
+
     result = insert_user(name=name, user_id=user_id, access_hash=access_hash, phone_number=phone_number,
-                         oauth_verifier=oauth_verifier, oauth_token=auth['oauth_token'],
-                         oauth_token_secret=auth['oauth_token_secret'])
+                         final_oauth_token=final_dict.get("final_oauth_token"),
+                         final_oauth_token_secret=final_dict.get("final_oauth_token_secret"))
     if not result:
         text_message = TextMessage(ReadyMessage.fail_insert_user)
 
@@ -146,20 +154,22 @@ def verify(bot, update):
         my_logger.info(LogMessage.start, extra={"user_id": user_id, "tag": "info"})
         dispatcher.finish_conversation(update)
         return None
-    text_message = TextMessage(ReadyMessage.success_insert_user)
+    general_message = TextMessage(ReadyMessage.success_insert_user)
 
-    text_message = TextMessage(ReadyMessage.send_verify_number.format(verify_link))
-    kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
-    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+    btn_list = [TemplateMessageButton(text=TMessage.send_tweet, value=TMessage.send_tweet, action=0)]
+    template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+    kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
+
     my_logger.info(LogMessage.start, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         CommandHandler("info", info),
                                                         MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.back),
-                                                            start_conversation),
-                                                        MessageHandler(TextFilter(), send_tweet)])
+                                                            TemplateResponseFilter(keywords=TMessage.send_tweet),
+                                                            get_tweet_text),
+                                                        ])
 
 
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.send_tweet]))
@@ -177,17 +187,16 @@ def get_tweet_text(bot, update):
                                                         MessageHandler(
                                                             TemplateResponseFilter(keywords=TMessage.back),
                                                             start_conversation),
-                                                        MessageHandler(TextFilter(), verify)])
+                                                        MessageHandler(TextFilter(), send_tweet)])
 
 
 def send_tweet(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
-    oauth_verifier = update.get_effective_message().text
-    auth = dispatcher.get_conversation_data(update, key="auth")
-
-    tweet_text = dispatcher.get_conversation_data(update, key="tweet_text")
-    result = tweet_api(auth, oauth_verifier, tweet_text)
+    tweet_text = update.get_effective_message().text
+    user = get_user(user_id=user_id)
+    result = send_tweet_api(final_oauth_token=user.final_oauth_token,
+                            final_oauth_token_secret=user.final_oauth_token_secret, tweet_text=tweet_text)
     if result:
         general_message = TextMessage(ReadyMessage.success_tweet)
     else:

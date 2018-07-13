@@ -17,24 +17,24 @@ def get_verify_link():
 
 # I manually open this url in the browers and
 # set oaut_verifier to the value like seen below.
-def tweet_api(auth, oauth_verifier, tweet_text):
-    OAUTH_TOKEN = auth['oauth_token']
 
-    OAUTH_TOKEN_SECRET = auth['oauth_token_secret']
 
-    print("OAUTH_TOKEN: ", OAUTH_TOKEN)
-    print("OAUTH_TOKEN_SECRET", OAUTH_TOKEN_SECRET)
-    twitter = Twython(APP_KEY, APP_SECRET, OAUTH_TOKEN, OAUTH_TOKEN_SECRET)
+def final_verify(oauth_verifier, oauth_token, oauth_token_secret):
+    print("OAUTH_TOKEN: ", oauth_token)
+    twitter = Twython(APP_KEY, APP_SECRET, oauth_token, oauth_token_secret)
 
     final_step = twitter.get_authorized_tokens(oauth_verifier)
 
-    FINAL_OAUTH_TOKEN = final_step['oauth_token']
-    FINAL_OAUTH_TOKEN_SECRET = final_step['oauth_token_secret']
+    final_oauth_token = final_step['oauth_token']
+    final_oauth_token_secret = final_step['oauth_token_secret']
+    final_dict = {"final_oauth_token": final_oauth_token, "final_oauth_token_secret": final_oauth_token_secret}
+    print(final_dict)
+    return final_dict
 
+
+def send_tweet_api(final_oauth_token, final_oauth_token_secret, tweet_text):
     twitter = Twython(APP_KEY, APP_SECRET,
-                      FINAL_OAUTH_TOKEN, FINAL_OAUTH_TOKEN_SECRET)
-
-    # print(twitter.update_status())
+                      final_oauth_token, final_oauth_token_secret)
     try:
         result = twitter.update_status(status=tweet_text)
         print(result)
