@@ -11,7 +11,7 @@ from constant.message import ReadyMessage, TMessage, LogMessage, Regex
 from db.db_handler import create_all_table, insert_user, get_user
 import asyncio
 
-from twitter_api import get_verify_link, send_tweet_api, final_verify
+from twitter_api import get_verify_link, send_tweet_api, final_verify, get_home_time_line
 
 updater = Updater(token=BotConfig.bot_token,
                   loop=asyncio.get_event_loop())
@@ -66,13 +66,16 @@ def start_conversation(bot, update):
                                                             TemplateResponseFilter(keywords=TMessage.send_tweet),
                                                             get_tweet_text),
                                                         MessageHandler(
+                                                            TemplateResponseFilter(keywords=TMessage.get_time_line),
+                                                            get_time_line),
+                                                        MessageHandler(
                                                             TemplateResponseFilter(keywords=TMessage.info),
                                                             info)
                                                         ])
 
 
-@dispatcher.command_handler(["/adduser"])
-def add_user(bot, update):
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.register]))
+def registration(bot, update):
     dispatcher.clear_conversation_data(update)
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
@@ -136,12 +139,8 @@ def verify(bot, update):
     access_hash = user_peer.access_hash
     name = dispatcher.get_conversation_data(update, "name")
     phone_number = dispatcher.get_conversation_data(update, "phone_number")
-    print(auth['oauth_token'])
-    print(auth['oauth_token_secret'])
-
     final_dict = final_verify(oauth_verifier=oauth_verifier, oauth_token=auth['oauth_token'],
                               oauth_token_secret=auth['oauth_token_secret'])
-
     result = insert_user(name=name, user_id=user_id, access_hash=access_hash, phone_number=phone_number,
                          final_oauth_token=final_dict.get("final_oauth_token"),
                          final_oauth_token_secret=final_dict.get("final_oauth_token_secret"))
@@ -176,6 +175,22 @@ def verify(bot, update):
 def get_tweet_text(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
+    user = get_user(user_id=user_id)
+    if not user:
+        general_message = TextMessage(ReadyMessage.not_register)
+        btn_list = [TemplateMessageButton(text=TMessage.register, value=TMessage.register, action=0)]
+        template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+        kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
+                         kwargs=kwargs)
+        dispatcher.register_conversation_next_step_handler(update,
+                                                           [CommandHandler("start", start_conversation),
+                                                            CommandHandler("info", info),
+                                                            MessageHandler(
+                                                                TemplateResponseFilter(keywords=TMessage.register),
+                                                                registration)])
+        return None
+
     text_message = TextMessage(ReadyMessage.send_text_twitter)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
@@ -213,6 +228,45 @@ def send_tweet(bot, update):
                                                         MessageHandler(
                                                             TemplateResponseFilter(keywords=TMessage.back),
                                                             start_conversation)])
+
+
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_time_line]))
+def get_time_line(bot, update):
+    user_peer = update.get_effective_user()
+    user_id = user_peer.peer_id
+    user = get_user(user_id=user_id)
+    if not user:
+        general_message = TextMessage(ReadyMessage.not_register)
+        btn_list = [TemplateMessageButton(text=TMessage.register, value=TMessage.register, action=0)]
+        template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+        kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
+                         kwargs=kwargs)
+        dispatcher.register_conversation_next_step_handler(update,
+                                                           [CommandHandler("start", start_conversation),
+                                                            CommandHandler("info", info),
+                                                            MessageHandler(
+                                                                TemplateResponseFilter(keywords=TMessage.register),
+                                                                registration)])
+        return None
+    time_line = get_home_time_line(final_oauth_token=user.final_oauth_token,
+                                   final_oauth_token_secret=user.final_oauth_token_secret)
+    print(time_line)
+    for tweet in time_line:
+        message = TextMessage(
+            ReadyMessage.tweet_message.format(tweet.get("text"), tweet.get("name"),
+                                              tweet.get("favorite_count"), tweet.get("retweet_count"),
+                                              tweet.get("profile_image_url")))
+        kwargs = {"message": message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(message, user_peer, success_callback=success, failure_callback=failure,
+                         kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(update,
+                                                       [CommandHandler("start", start_conversation),
+                                                        CommandHandler("info", info),
+                                                        MessageHandler(
+                                                            TemplateResponseFilter(keywords=TMessage.back),
+                                                            start_conversation),
+                                                        ])
 
 
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.info]))
