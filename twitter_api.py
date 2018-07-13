@@ -37,16 +37,12 @@ def get_home_time_line(final_oauth_token, final_oauth_token_secret):
     try:
         result = twitter.get_home_timeline()
         tweets_list = []
-        dict={}
         for tweet in result:
             user = tweet.get("user")
-
             dict = {"name": user.get("name"), "text": tweet.get("text"),
                     "profile_image_url": user.get("profile_image_url"),
                     "favorite_count": tweet.get("favorite_count"), "retweet_count": tweet.get("retweet_count")}
             tweets_list.append(dict)
-            print(tweet)
-            print("\n\n\n\n")
         return tweets_list
     except ValueError:
         return False
@@ -57,12 +53,10 @@ def search_api(final_oauth_token, final_oauth_token_secret, query):
                       final_oauth_token, final_oauth_token_secret)
     try:
         result = twitter.search(q=query)
-        statuses=result.get("statuses")
+        statuses = result.get("statuses")
         tweets_list = []
-        dict={}
         for status in statuses:
             user = status.get("user")
-
             dict = {"name": user.get("name"), "text": status.get("text"),
                     "profile_image_url": user.get("profile_image_url"),
                     "favorite_count": status.get("favorite_count"), "retweet_count": status.get("retweet_count")}
@@ -71,15 +65,5 @@ def search_api(final_oauth_token, final_oauth_token_secret, query):
     except ValueError:
         return False
 
-
 # search_api("981164432905658368-zKY664sjNQKRmVaq9eIWBFHuHnvPufK", "mtezuUYBYPyD7gpvWyex5An7GcpL3FC10rrNsfrLs0Jmv",
 #            "python")
-
-# def send_direct_api(final_oauth_token, final_oauth_token_secret, text, screen_name):
-#     twitter = Twython(APP_KEY, APP_SECRET,
-#                       final_oauth_token, final_oauth_token_secret)
-#     try:
-#         result = twitter.send_direct_message(text=text, screen_name=screen_name)
-#         return result
-#     except ValueError:
-#         return False
