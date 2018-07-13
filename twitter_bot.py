@@ -8,7 +8,7 @@ from constant.message import ReadyMessage, TMessage, LogMessage, Regex
 from db.db_handler import create_all_table, insert_user, get_user
 import asyncio
 
-from twitter_api import get_verify_link, send_tweet_api, final_verify, get_home_time_line
+from twitter_api import get_verify_link, send_tweet_api, final_verify, get_home_time_line, search_api
 
 updater = Updater(token=BotConfig.bot_token,
                   loop=asyncio.get_event_loop())
@@ -213,12 +213,11 @@ def get_time_line(bot, update):
         return None
     time_line = get_home_time_line(final_oauth_token=user.final_oauth_token,
                                    final_oauth_token_secret=user.final_oauth_token_secret)
-    print(time_line)
     for tweet in time_line:
         message = TextMessage(
             ReadyMessage.tweet_message.format(tweet.get("text"), tweet.get("name"),
                                               tweet.get("favorite_count"), tweet.get("retweet_count"),
-                                              tweet.get("profile_image_url")))
+                                              ))
         kwargs = {"message": message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
@@ -251,7 +250,7 @@ def get_search_text(bot, update):
                                                                 registration)])
         return None
 
-    text_message = TextMessage(ReadyMessage.send_text_twitter)
+    text_message = TextMessage(ReadyMessage.send_search_text)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
@@ -262,25 +261,23 @@ def get_search_text(bot, update):
                                                         MessageHandler(
                                                             TemplateResponseFilter(keywords=TMessage.back),
                                                             start_conversation),
-                                                        MessageHandler(TextFilter(), send_tweet)])
+                                                        MessageHandler(TextFilter(), search_tweets)])
 
 
-def send_tweet(bot, update):
+def search_tweets(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
-    tweet_text = update.get_effective_message().text
+    query = update.get_effective_message().text
     user = get_user(user_id=user_id)
-    result = send_tweet_api(final_oauth_token=user.final_oauth_token,
-                            final_oauth_token_secret=user.final_oauth_token_secret, tweet_text=tweet_text)
-    if result:
-        general_message = TextMessage(ReadyMessage.success_tweet)
-    else:
-        general_message = TextMessage(ReadyMessage.fail_tweet)
-    btn_list = [TemplateMessageButton(text=TMessage.back, value=TMessage.back, action=0)]
-    template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
-    kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
-    bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
-                     kwargs=kwargs)
+    statuses = search_api(final_oauth_token=user.final_oauth_token,
+                          final_oauth_token_secret=user.final_oauth_token_secret, query=query)
+    for status in statuses:
+        message = TextMessage(
+            ReadyMessage.tweet_message.format(status.get("text"), status.get("name"),
+                                              status.get("favorite_count"), status.get("retweet_count")))
+        kwargs = {"message": message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(message, user_peer, success_callback=success, failure_callback=failure,
+                         kwargs=kwargs)
     my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
