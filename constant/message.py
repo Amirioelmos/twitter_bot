@@ -4,21 +4,23 @@ class ReadyMessage:
                          "{}"
     send_text_twitter = "لطفا متن توییت خود را ارسال کنید.\n" \
                         "*توجه:* ممکن است ارسال توییت کمی زمان‌بر باشد. از شکیبایی شما متشکریم"
+    send_search_text = "لطفا متن مورد نظر برای جست و جو را وارد نمایید."
     success_tweet = "توییت شما با موفقیت ارسال گردید."
     fail_tweet = "متاسفانه! ارسال توییت موفق نبود."
     error = "*خطایی رخ داده است. *" \
             " لطفا دوباره امتحان کنید."
-    information = "باتی دیگر از ehsanbarkhordar@"
+    information = "Created by:\n" \
+                  "@EhsanBarkhordar"
     send_name = "لطفا نام خود را ارسال کنید."
     send_phone_number = "لطفا تلفن همراه خود را ارسال کنید."
     success_insert_user = "نام شما با موفقیت در بات ثبت شد."
     fail_insert_user = "متاصفانه نام شما با موفقیت در بات ثبت نشد."
     not_register = "شما اولین بار است که ازین بات استفاده میکنید.\n" \
                    "لطفا برای شروع روی دکمه زیر کلیک کنید."
-    tweet_message="{}\n" \
-                  "کاربر: {}\n" \
-                  "لایک: {} --- ریتویت:{}\n" \
-                  "{}"
+    tweet_message = "{}\n" \
+                    "کاربر: {}\n" \
+                    "لایک: {} --- ریتویت:{}\n" \
+                    "{}"
 
 
 class TMessage:
@@ -30,8 +32,8 @@ class TMessage:
     back = "بازگشت به منو اصلی"
     send_tweet = "ارسال تويیت"
     get_time_line = "خواندن تایم لاین"
-    send_direct = "ارسال پیام خصوصی"
     register = "ثبت نام کاربری"
+    search = "جستجو توییت"
 
 
 class LogMessage:

@@ -11,7 +11,7 @@ class BotConfig:
     max_total_send_failure = int(os.environ.get('MAX_TOTAL_SEND_FAILURE', None) or 10)
     active_next_limit = int(os.environ.get('ACTIVE_NEXT_LIMIT', None) or 40)
 
-    bot_token = os.environ.get('BOT_TOKEN', None) or "2d30056111e6c176af0757c6c53fcfdc8cd7d581"
+    bot_token = os.environ.get('BOT_TOKEN', None) or "649bf46416fa39f1e4893b4fa53faf59c309b54e"
     bot_user_id = os.environ.get('BOT_USER_ID', None) or "41"
 
     app_key = os.environ.get('APP_KEY', None) or "vNo9Sp0r1YuQM3jAHjL3C2qvR"

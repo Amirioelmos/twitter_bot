@@ -24,36 +24,32 @@ def create_all_table():
 class User(Base):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    name = Column(String)
     user_id = Column(Integer, nullable=False, unique=True)
     access_hash = Column(String, nullable=False)
-    phone_number = Column(String(13))
     final_oauth_token = Column(String, nullable=False)
     final_oauth_token_secret = Column(String, nullable=False)
     is_premium = Column(Boolean, default=False)
 
-    def __init__(self, name, user_id, access_hash, phone_number, final_oauth_token, final_oauth_token_secret):
-        self.name = name
+    def __init__(self, user_id, access_hash, final_oauth_token, final_oauth_token_secret):
         self.user_id = user_id
         self.access_hash = access_hash
-        self.phone_number = phone_number
         self.final_oauth_token = final_oauth_token
         self.final_oauth_token_secret = final_oauth_token_secret
 
     def __repr__(self):
-        return "<User(name='%s',user_id='%i',access_hash='%s', phone_number='%s," \
+        return "<User(user_id='%i',access_hash='%s'," \
                "oauth_token='%s',oauth_token_secret='%s',is_premium='%s')>" % (
-                   self.name, self.user_id, self.access_hash, self.phone_number,
+                   self.user_id, self.access_hash,
                    self.final_oauth_token, self.final_oauth_token_secret, self.is_premium)
 
 
-def insert_user(name, user_id, access_hash, phone_number, final_oauth_token, final_oauth_token_secret):
-    insert_stmt = insert(User).values(name=name, user_id=user_id, access_hash=access_hash, phone_number=phone_number,
+def insert_user(user_id, access_hash, final_oauth_token, final_oauth_token_secret):
+    insert_stmt = insert(User).values(user_id=user_id, access_hash=access_hash,
                                       final_oauth_token=final_oauth_token,
                                       final_oauth_token_secret=final_oauth_token_secret)
     on_update_stmt = insert_stmt.on_conflict_do_update(
         index_elements=['user_id'],
-        set_=dict(name=name, phone_number=phone_number, final_oauth_token=final_oauth_token,
+        set_=dict(final_oauth_token=final_oauth_token,
                   final_oauth_token_secret=final_oauth_token_secret))
     try:
         result = db.execute(on_update_stmt)
