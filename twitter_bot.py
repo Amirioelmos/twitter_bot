@@ -153,16 +153,21 @@ def get_tweet_text(bot, update):
                                                                 registration)])
         return None
 
-    text_message = TextMessage(ReadyMessage.send_text_twitter)
-    kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
-    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+    general_message = TextMessage(ReadyMessage.send_text_twitter)
+
+    btn_list = [TemplateMessageButton(text=TMessage.cancel, value=TMessage.cancel, action=0)]
+    template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+    kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
+
     my_logger.info(LogMessage.start, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         CommandHandler("info", info),
                                                         MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.back),
+                                                            TemplateResponseFilter(
+                                                                keywords=[TMessage.back, TMessage.cancel]),
                                                             start_conversation),
                                                         MessageHandler(TextFilter(), send_tweet)])
 
