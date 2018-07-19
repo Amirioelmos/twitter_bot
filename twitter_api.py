@@ -35,13 +35,22 @@ def get_home_time_line(final_oauth_token, final_oauth_token_secret):
     twitter = Twython(APP_KEY, APP_SECRET,
                       final_oauth_token, final_oauth_token_secret)
     try:
-        result = twitter.get_home_timeline()
+        result = twitter.get_home_timeline(exclude_replies=True)
         tweets_list = []
         for tweet in result:
             user = tweet.get("user")
+            retweeted_status = tweet.get("retweeted_status")
+            if retweeted_status:
+                favorite_count = retweeted_status.get("favorite_count")
+            else:
+                favorite_count = tweet.get("favorite_count")
+
             dict = {"name": user.get("name"), "text": tweet.get("text"),
+                    "screen_name": "https://twitter.com/" + user.get("screen_name"),
+                    "tweet_link": "https://twitter.com/statuses/" + tweet.get("id_str"),
                     "profile_image_url": user.get("profile_image_url"),
-                    "favorite_count": tweet.get("favorite_count"), "retweet_count": tweet.get("retweet_count")}
+                    "favorite_count": favorite_count,
+                    "retweet_count": tweet.get("retweet_count")}
             tweets_list.append(dict)
         return tweets_list
     except ValueError:

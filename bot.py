@@ -220,7 +220,9 @@ def get_time_line(bot, update):
                                    final_oauth_token_secret=user.final_oauth_token_secret)
     for tweet in time_line:
         message = TextMessage(
-            ReadyMessage.tweet_message.format(tweet.get("text"), tweet.get("name"),
+            ReadyMessage.tweet_message.format(tweet.get("text"),
+                                              tweet.get("tweet_link"),
+                                              tweet.get("name"), tweet.get("screen_name"),
                                               tweet.get("favorite_count"), tweet.get("retweet_count"),
                                               ))
         kwargs = {"message": message, "user_peer": user_peer, "try_times": 1}
