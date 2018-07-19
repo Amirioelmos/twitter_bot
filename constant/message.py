@@ -34,6 +34,7 @@ class TMessage:
     get_time_line = "خواندن تایم لاین"
     register = "ثبت نام کاربری"
     search = "جستجو توییت"
+    show_more = "موارد بیشتر"
 
 
 class LogMessage:

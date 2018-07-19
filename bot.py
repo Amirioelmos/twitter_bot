@@ -70,7 +70,9 @@ def start_conversation(bot, update):
                                                             get_search_text),
                                                         MessageHandler(
                                                             TemplateResponseFilter(keywords=TMessage.info),
-                                                            info)
+                                                            info), MessageHandler(DefaultFilter(),
+                                                                                  start_conversation)
+
                                                         ])
 
 
@@ -88,10 +90,10 @@ def registration(bot, update):
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         CommandHandler("info", info),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.back),
-                                                            start_conversation),
-                                                        MessageHandler(TextFilter(), verify)])
+                                                        MessageHandler(TextFilter(), verify),
+                                                        MessageHandler(DefaultFilter(),
+                                                                       start_conversation),
+                                                        ])
 
 
 def verify(bot, update):
@@ -130,6 +132,8 @@ def verify(bot, update):
                                                         MessageHandler(
                                                             TemplateResponseFilter(keywords=TMessage.send_tweet),
                                                             get_tweet_text),
+                                                        MessageHandler(DefaultFilter(),
+                                                                       start_conversation),
                                                         ])
 
 
@@ -150,7 +154,10 @@ def get_tweet_text(bot, update):
                                                             CommandHandler("info", info),
                                                             MessageHandler(
                                                                 TemplateResponseFilter(keywords=TMessage.register),
-                                                                registration)])
+                                                                registration),
+                                                            MessageHandler(DefaultFilter(),
+                                                                           start_conversation),
+                                                            ])
         return None
 
     general_message = TextMessage(ReadyMessage.send_text_twitter)
@@ -169,7 +176,10 @@ def get_tweet_text(bot, update):
                                                             TemplateResponseFilter(
                                                                 keywords=[TMessage.back, TMessage.cancel]),
                                                             start_conversation),
-                                                        MessageHandler(TextFilter(), send_tweet)])
+                                                        MessageHandler(TextFilter(), send_tweet),
+                                                        MessageHandler(DefaultFilter(),
+                                                                       start_conversation),
+                                                        ])
 
 
 def send_tweet(bot, update):
@@ -192,12 +202,11 @@ def send_tweet(bot, update):
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         CommandHandler("info", info),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.back),
-                                                            start_conversation)])
+                                                        MessageHandler(DefaultFilter(),
+                                                                       start_conversation)])
 
 
-@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_time_line]))
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_time_line, TMessage.show_more]))
 def get_time_line(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
@@ -214,10 +223,14 @@ def get_time_line(bot, update):
                                                             CommandHandler("info", info),
                                                             MessageHandler(
                                                                 TemplateResponseFilter(keywords=TMessage.register),
-                                                                registration)])
+                                                                registration),
+                                                            MessageHandler(DefaultFilter(),
+                                                                           start_conversation),
+                                                            ])
         return None
     time_line = get_home_time_line(final_oauth_token=user.final_oauth_token,
                                    final_oauth_token_secret=user.final_oauth_token_secret)
+    a = 1
     for tweet in time_line:
         message = TextMessage(
             ReadyMessage.tweet_message.format(tweet.get("text"),
@@ -225,15 +238,26 @@ def get_time_line(bot, update):
                                               tweet.get("name"), tweet.get("screen_name"),
                                               tweet.get("favorite_count"), tweet.get("retweet_count"),
                                               ))
+        if a == len(time_line):
+            btn_list = [TemplateMessageButton(text=TMessage.show_more, value=TMessage.show_more, action=0)]
+            template_message = TemplateMessage(general_message=message, btn_list=btn_list)
+            kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+            bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
+                             kwargs=kwargs)
+            break
         kwargs = {"message": message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
+        a += 1
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         CommandHandler("info", info),
                                                         MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.back),
-                                                            start_conversation),
+                                                            TemplateResponseFilter(
+                                                                keywords=[TMessage.get_time_line, TMessage.show_more]),
+                                                            get_time_line),
+                                                        MessageHandler(DefaultFilter(),
+                                                                       start_conversation),
                                                         ])
 
 
@@ -254,7 +278,10 @@ def get_search_text(bot, update):
                                                             CommandHandler("info", info),
                                                             MessageHandler(
                                                                 TemplateResponseFilter(keywords=TMessage.register),
-                                                                registration)])
+                                                                registration),
+                                                            MessageHandler(DefaultFilter(),
+                                                                           start_conversation),
+                                                            ])
         return None
 
     text_message = TextMessage(ReadyMessage.send_search_text)
@@ -265,10 +292,10 @@ def get_search_text(bot, update):
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         CommandHandler("info", info),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.back),
-                                                            start_conversation),
-                                                        MessageHandler(TextFilter(), search_tweets)])
+                                                        MessageHandler(TextFilter(), search_tweets),
+                                                        MessageHandler(DefaultFilter(),
+                                                                       start_conversation),
+                                                        ])
 
 
 def search_tweets(bot, update):
@@ -288,13 +315,14 @@ def search_tweets(bot, update):
         kwargs = {"message": message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
+
     my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         CommandHandler("info", info),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.back),
-                                                            start_conversation)])
+                                                        MessageHandler(DefaultFilter(),
+                                                                       start_conversation),
+                                                        ])
 
 
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.info]))
