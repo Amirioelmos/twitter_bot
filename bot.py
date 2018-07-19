@@ -280,8 +280,11 @@ def search_tweets(bot, update):
                           final_oauth_token_secret=user.final_oauth_token_secret, query=query)
     for status in statuses:
         message = TextMessage(
-            ReadyMessage.tweet_message.format(status.get("text"), status.get("name"),
-                                              status.get("favorite_count"), status.get("retweet_count")))
+            ReadyMessage.tweet_message.format(status.get("text"),
+                                              status.get("tweet_link"),
+                                              status.get("name"), status.get("screen_name"),
+                                              status.get("favorite_count"), status.get("retweet_count"),
+                                              ))
         kwargs = {"message": message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)

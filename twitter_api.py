@@ -35,7 +35,7 @@ def get_home_time_line(final_oauth_token, final_oauth_token_secret):
     twitter = Twython(APP_KEY, APP_SECRET,
                       final_oauth_token, final_oauth_token_secret)
     try:
-        result = twitter.get_home_timeline(exclude_replies=True)
+        result = twitter.get_home_timeline(exclude_replies=True, count=BotConfig.tweet_count)
         tweets_list = []
         for tweet in result:
             user = tweet.get("user")
@@ -44,7 +44,6 @@ def get_home_time_line(final_oauth_token, final_oauth_token_secret):
                 favorite_count = retweeted_status.get("favorite_count")
             else:
                 favorite_count = tweet.get("favorite_count")
-
             dict = {"name": user.get("name"), "text": tweet.get("text"),
                     "screen_name": "https://twitter.com/" + user.get("screen_name"),
                     "tweet_link": "https://twitter.com/statuses/" + tweet.get("id_str"),
@@ -61,14 +60,22 @@ def search_api(final_oauth_token, final_oauth_token_secret, query):
     twitter = Twython(APP_KEY, APP_SECRET,
                       final_oauth_token, final_oauth_token_secret)
     try:
-        result = twitter.search(q=query)
+        result = twitter.search(q=query, count=BotConfig.tweet_count)
         statuses = result.get("statuses")
         tweets_list = []
         for status in statuses:
             user = status.get("user")
+            retweeted_status = status.get("retweeted_status")
+            if retweeted_status:
+                favorite_count = retweeted_status.get("favorite_count")
+            else:
+                favorite_count = status.get("favorite_count")
             dict = {"name": user.get("name"), "text": status.get("text"),
+                    "screen_name": "https://twitter.com/" + user.get("screen_name"),
+                    "tweet_link": "https://twitter.com/statuses/" + status.get("id_str"),
                     "profile_image_url": user.get("profile_image_url"),
-                    "favorite_count": status.get("favorite_count"), "retweet_count": status.get("retweet_count")}
+                    "favorite_count": favorite_count,
+                    "retweet_count": status.get("retweet_count")}
             tweets_list.append(dict)
         return tweets_list
     except ValueError:

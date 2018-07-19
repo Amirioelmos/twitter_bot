@@ -16,3 +16,4 @@ class BotConfig:
 
     app_key = os.environ.get('APP_KEY', None) or "vNo9Sp0r1YuQM3jAHjL3C2qvR"
     app_secret = os.environ.get('APP_SECRET', None) or "o0eLxGxMBT78KOrOmFbq5HrhgGQ15ge7Ae5geNWdowWVTZSKjI"
+    tweet_count = int(os.environ.get('TWEET_COUNT', None) or 3)
