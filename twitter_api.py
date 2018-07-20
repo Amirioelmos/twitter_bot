@@ -80,6 +80,3 @@ def search_api(final_oauth_token, final_oauth_token_secret, query):
         return tweets_list
     except ValueError:
         return False
-
-# search_api("981164432905658368-zKY664sjNQKRmVaq9eIWBFHuHnvPufK", "mtezuUYBYPyD7gpvWyex5An7GcpL3FC10rrNsfrLs0Jmv",
-#            "python")

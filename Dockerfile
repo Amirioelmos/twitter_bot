@@ -1,12 +1,15 @@
 #Download base image python 3.5
 FROM python:3.5
 
-WORKDIR /world_cup_bot
-COPY . /world_cup_bot
+WORKDIR /twitter_bot
+
+COPY requirements.txt /twitter_bot
 
 RUN pip install -r requirements.txt
 
+COPY . /twitter_bot
+
 RUN echo "Asia/Tehran" > /etc/timezone
 
-CMD ["python3.5", "world_cup_bot2.py"]
+CMD ["python3.5", "bot.py"]
 
