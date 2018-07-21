@@ -1,7 +1,7 @@
 version: '3.0'
 services:
   pg-worldcup_1:
-    image: registry.bale.ai:2443/postgres:9.5
+    image: postgres:9.5
     container_name: pg-worldcup_1
     environment:
       - POSTGRES_USER=ehsan
