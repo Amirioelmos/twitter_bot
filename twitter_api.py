@@ -1,6 +1,9 @@
 from twython import Twython
 
 from bot_config import BotConfig
+from dateutil import parser
+import jdatetime
+import locale
 
 APP_KEY = BotConfig.app_key
 APP_SECRET = BotConfig.app_secret
@@ -49,7 +52,14 @@ def get_home_time_line(final_oauth_token, final_oauth_token_secret):
                     "tweet_link": "https://twitter.com/statuses/" + tweet.get("id_str"),
                     "profile_image_url": user.get("profile_image_url"),
                     "favorite_count": favorite_count,
-                    "retweet_count": tweet.get("retweet_count")}
+                    "retweet_count": tweet.get("retweet_count"),
+                    "datetime":datetime_converter(tweet.get("created_at", None))
+                    }
+            entities = tweet.get("entities")
+            print(entities)
+
+            print(entities.get("media_url", None))
+            print("\n\n\n\n")
             tweets_list.append(dict)
         return tweets_list
     except ValueError:
@@ -80,3 +90,11 @@ def search_api(final_oauth_token, final_oauth_token_secret, query):
         return tweets_list
     except ValueError:
         return False
+
+
+def datetime_converter(date_utc):
+    locale.setlocale(locale.LC_ALL, "fa_IR")
+    date = parser.parse(date_utc)
+    persian_date = str(jdatetime.date.fromgregorian(date=date).strftime("%a, %d %b %Y"))
+    time = str(date.time())
+    return persian_date + " ساعت " + time

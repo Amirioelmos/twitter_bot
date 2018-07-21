@@ -237,6 +237,7 @@ def get_time_line(bot, update):
                                               tweet.get("tweet_link"),
                                               tweet.get("name"), tweet.get("screen_name"),
                                               tweet.get("favorite_count"), tweet.get("retweet_count"),
+                                              tweet.get("datetime")
                                               ))
         if a == len(time_line):
             btn_list = [TemplateMessageButton(text=TMessage.show_more, value=TMessage.show_more, action=0)]
