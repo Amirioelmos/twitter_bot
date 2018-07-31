@@ -1,3 +1,6 @@
+from dateutil import parser
+import jdatetime
+import locale
 import re
 
 
@@ -24,3 +27,12 @@ def standardize_phone_number(number):
         return "+98" + number_str[4:]
     elif number_str.startswith("0"):
         return "+98" + number_str[1:]
+
+
+def datetime_converter(date_utc):
+    locale.setlocale(locale.LC_ALL, "fa_IR")
+    date = parser.parse(date_utc)
+    persian_date = jdatetime.date.fromgregorian(date=date).strftime("%a, %d %b %Y")
+    persian_time = date.time()
+    tup = (persian_date, persian_time)
+    return tup

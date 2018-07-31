@@ -1,6 +1,8 @@
+import base64
+
 from balebot.filters import TemplateResponseFilter, TextFilter, DefaultFilter, LocationFilter
 from balebot.handlers import MessageHandler, CommandHandler
-from balebot.models.messages import TemplateMessageButton, TextMessage, TemplateMessage, JsonMessage
+from balebot.models.messages import TemplateMessageButton, TextMessage, TemplateMessage, JsonMessage, PhotoMessage
 from balebot.updater import Updater
 from balebot.utils.logger import Logger
 from bot_config import BotConfig
@@ -9,6 +11,7 @@ from db.db_handler import create_all_table, insert_user, get_user
 import asyncio
 
 from twitter_api import get_verify_link, send_tweet_api, final_verify, get_home_time_line, search_api
+from utils.utils import eng_to_arabic_number
 
 updater = Updater(token=BotConfig.bot_token,
                   loop=asyncio.get_event_loop())
@@ -50,30 +53,12 @@ def start_conversation(bot, update):
                 TemplateMessageButton(text=TMessage.get_time_line, value=TMessage.get_time_line, action=0),
                 TemplateMessageButton(text=TMessage.search, value=TMessage.search, action=0),
                 TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
-
     template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
     my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
-    dispatcher.register_conversation_next_step_handler(update,
-                                                       [CommandHandler("start", start_conversation),
-                                                        CommandHandler("info", info),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.send_tweet),
-                                                            get_tweet_text),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.get_time_line),
-                                                            get_time_line),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.search),
-                                                            get_search_text),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.info),
-                                                            info), MessageHandler(DefaultFilter(),
-                                                                                  start_conversation)
-
-                                                        ])
+    dispatcher.finish_conversation(update)
 
 
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.register]))
@@ -110,7 +95,6 @@ def verify(bot, update):
                          final_oauth_token_secret=final_dict.get("final_oauth_token_secret"))
     if not result or not final_dict:
         text_message = TextMessage(ReadyMessage.fail_insert_user)
-
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
@@ -218,26 +202,45 @@ def get_time_line(bot, update):
         kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
-        dispatcher.register_conversation_next_step_handler(update,
-                                                           [CommandHandler("start", start_conversation),
-                                                            CommandHandler("info", info),
-                                                            MessageHandler(
-                                                                TemplateResponseFilter(keywords=TMessage.register),
-                                                                registration),
-                                                            MessageHandler(DefaultFilter(),
-                                                                           start_conversation),
-                                                            ])
-        return None
+        dispatcher.finish_conversation(update)
+        return 0
     time_line = get_home_time_line(final_oauth_token=user.final_oauth_token,
                                    final_oauth_token_secret=user.final_oauth_token_secret)
     a = 1
     for tweet in time_line:
+        media_dict = tweet.get("media_dict")
+        if media_dict:
+            print("meddddddddddddiiiiiiiiiiiiiaaaaaaaaaaa")
+            media_url = media_dict.get("media_url")
+            print(media_url)
+            # import ast
+            # media_url = ast.literal_eval(media_url)
+            print(media_url)
+            height = media_url.get("height")
+            width = media_url.get("width")
+
+            def file_upload_success(result, user_data):
+                print("upload was successful : ", result)
+                print(user_data)
+                file_id = str(user_data.get("file_id", None))
+                access_hash = str(user_data.get("user_id", None))
+                file_size = str(user_data.get("file_size", None))
+
+                photo_message = PhotoMessage(file_id=file_id, access_hash=access_hash, name="Bale", file_size='11337',
+                                             mime_type="image/jpeg", caption_text=TextMessage(text="Bale"),
+                                             file_storage_version=1, thumb=None)
+
+                bot.send_message(photo_message, user_peer, success_callback=success, failure_callback=failure)
+
+            bot.upload_file(file="media_url", file_type="file", success_callback=file_upload_success,
+                            failure_callback=failure)
+
         message = TextMessage(
             ReadyMessage.tweet_message.format(tweet.get("text"),
                                               tweet.get("tweet_link"),
                                               tweet.get("name"), tweet.get("screen_name"),
-                                              tweet.get("favorite_count"), tweet.get("retweet_count"),
-                                              tweet.get("datetime")
+                                              eng_to_arabic_number(tweet.get("favorite_count")), eng_to_arabic_number(tweet.get("retweet_count")),
+                                              eng_to_arabic_number(tweet.get("datetime"))
                                               ))
         if a == len(time_line):
             btn_list = [TemplateMessageButton(text=TMessage.show_more, value=TMessage.show_more, action=0)]
@@ -307,11 +310,34 @@ def search_tweets(bot, update):
     statuses = search_api(final_oauth_token=user.final_oauth_token,
                           final_oauth_token_secret=user.final_oauth_token_secret, query=query)
     for status in statuses:
+        media_url = status.get("media_url", None)
+        height = status.get("height")
+        width = status.get("width")
+        if media_url:
+            print("meddddddddddddiiiiiiiiiiiiiaaaaaaaaaaa")
+            print(media_url)
+
+            def file_upload_success(result, user_data):
+                print("upload was successful : ", result)
+                print(user_data)
+                file_id = str(user_data.get("file_id", None))
+                access_hash = str(user_data.get("user_id", None))
+                file_size = str(user_data.get("file_size", None))
+
+                photo_message = PhotoMessage(file_id=file_id, access_hash=access_hash, name="Bale", file_size='11337',
+                                             mime_type="image/jpeg", caption_text=TextMessage(text="Bale"),
+                                             file_storage_version=1, thumb=None)
+
+                bot.send_message(photo_message, user_peer, success_callback=success, failure_callback=failure)
+
+            bot.upload_file(file="media_url", file_type="file", success_callback=file_upload_success,
+                            failure_callback=failure)
+
         message = TextMessage(
             ReadyMessage.tweet_message.format(status.get("text"),
                                               status.get("tweet_link"),
                                               status.get("name"), status.get("screen_name"),
-                                              status.get("favorite_count"), status.get("retweet_count"),
+                                              eng_to_arabic_number(status.get("favorite_count")), eng_to_arabic_number(status.get("retweet_count")),
                                               ))
         kwargs = {"message": message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(message, user_peer, success_callback=success, failure_callback=failure,
