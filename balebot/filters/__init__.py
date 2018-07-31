@@ -11,3 +11,4 @@ from balebot.filters.voice_filter import VoiceFilter
 from balebot.filters.template_response_filter import TemplateResponseFilter
 from balebot.filters.contact_filter import ContactFilter
 from balebot.filters.location_filter import LocationFilter
+from balebot.filters.bank_message_filter import BankMessageFilter

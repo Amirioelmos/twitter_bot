@@ -7,7 +7,7 @@ from balebot.models.constants.errors import Error
 class Peer(Jsonable):
     def __init__(self, peer_type, peer_id, access_hash):
         self.type = str(peer_type)
-        self.peer_id = int(peer_id)
+        self.peer_id = str(peer_id)
         self.access_hash = str(access_hash)
 
     def get_json_object(self):

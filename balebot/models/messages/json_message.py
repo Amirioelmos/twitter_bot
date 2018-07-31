@@ -17,6 +17,7 @@ class JsonMessage(BaseMessage):
         data = {
             "$type": MessageType.json_message,
             "rawJson": self.raw_json.get_json_str()
+
         }
         return data
 

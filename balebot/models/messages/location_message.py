@@ -1,19 +1,30 @@
 import json as json_handler
-from balebot.models.base_models.location import Location
+
+from balebot.models.constants.raw_json_type import RawJsonType
+from balebot.models.base_models.raw_json import RawJson
 from balebot.models.messages.base_message import BaseMessage
 from balebot.models.constants.errors import Error
 from balebot.models.constants.message_type import MessageType
 
 
-class LocationMessage(BaseMessage):
+class LocationMessage(RawJson, BaseMessage):
     def __init__(self, latitude, longitude):
-        self.raw_json = Location(latitude=latitude, longitude=longitude)
+        self.latitude = float(latitude)
+        self.longitude = float(longitude)
 
     def get_json_object(self):
 
         data = {
             "$type": MessageType.json_message,
-            "rawJson": self.raw_json.get_json_str()
+            "rawJson": json_handler.dumps({
+                "dataType": RawJsonType.location,
+                "data": {
+                    RawJsonType.location: {
+                        "latitude": self.latitude,
+                        "longitude": self.longitude
+                    }
+                }
+            })
         }
         return data
 
@@ -28,10 +39,10 @@ class LocationMessage(BaseMessage):
             json_dict = json_handler.loads(json)
         else:
             raise ValueError(Error.unacceptable_json)
-        latitude = json_dict.get('latitude', None)
-        longitude = json_dict.get('longitude', None)
 
-        if (not latitude) or (not longitude):
-            raise ValueError(Error.none_or_invalid_attribute)
+        data = json_dict.get('data', None)
+        location = data.get(RawJsonType.location, None)
+        latitude = location.get('latitude', None)
+        longitude = location.get('longitude', None)
 
         return cls(latitude=latitude, longitude=longitude)

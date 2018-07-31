@@ -7,8 +7,8 @@ class ReadyMessage:
     send_search_text = "لطفا متن مورد نظر برای جست و جو را وارد نمایید."
     success_tweet = "توییت شما با موفقیت ارسال گردید."
     fail_tweet = "متاسفانه! ارسال توییت موفق نبود."
-    error = "*خطایی رخ داده است. *" \
-            " لطفا دوباره امتحان کنید."
+    error = "*متاسفانه، خطایی رخ داده است. *\n" \
+            " لطفا دوباره سعی کنید."
     information = "باتی برای آسانی استفاده از توییتر در پیام رسان بله\n" \
                   "سازنده: *احسان برخوردار* آیدی بله: @EhsanBarkhordar\n" \
                   "ایده: *محمد یار احمدی* آیدی بله: @mimyarahmadi\n"
@@ -16,8 +16,8 @@ class ReadyMessage:
     send_phone_number = "لطفا تلفن همراه خود را ارسال کنید."
     success_insert_user = "نام شما با موفقیت در بات ثبت شد."
     fail_insert_user = "متاسفانه نام شما با موفقیت در بات ثبت نشد.\nلطفا دوباره سعی کنید."
-    not_register = "شما اولین بار است که ازین بات استفاده میکنید.\n" \
-                   "لطفا برای شروع روی دکمه زیر کلیک کنید."
+    not_register = "شما هنوز *ثبت نام* نکرده اید!\n" \
+                   "لطفا، برای شروع روی دکمه زیر کلیک کنید."
     tweet_message = "{}\n" \
                     "[لینک توییت]({})\n" \
                     "[{}]({})\n" \
@@ -33,7 +33,7 @@ class TMessage:
     info = "راهنما"
     back = "بازگشت به منو اصلی"
     send_tweet = "ارسال تويیت"
-    get_time_line = "خواندن تایم لاین"
+    get_home_time_line = "خواندن تایم لاین"
     register = "ثبت نام کاربری"
     search = "جستجو توییت"
     show_more = "موارد بیشتر"
@@ -63,9 +63,7 @@ class LogMessage:
     cancel_progress = "progress canceled"
 
     respond_notification = "respond to push message"
-
     info = "info showed"
-
     got_name = "name received"
     got_phone_number = "phone number received"
 

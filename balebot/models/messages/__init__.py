@@ -1,4 +1,5 @@
 from balebot.models.messages.banking.purchase_message import PurchaseMessage
+from balebot.models.messages.banking.bank_message import BankMessage
 
 from balebot.models.messages.template.template_message import TemplateMessage
 from balebot.models.messages.template.template_message_button import TemplateMessageButton

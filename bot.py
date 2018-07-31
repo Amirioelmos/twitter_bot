@@ -1,8 +1,6 @@
-import base64
-
-from balebot.filters import TemplateResponseFilter, TextFilter, DefaultFilter, LocationFilter
+from balebot.filters import TemplateResponseFilter, TextFilter, DefaultFilter
 from balebot.handlers import MessageHandler, CommandHandler
-from balebot.models.messages import TemplateMessageButton, TextMessage, TemplateMessage, JsonMessage, PhotoMessage
+from balebot.models.messages import TemplateMessageButton, TextMessage, TemplateMessage, PhotoMessage
 from balebot.updater import Updater
 from balebot.utils.logger import Logger
 from bot_config import BotConfig
@@ -15,7 +13,7 @@ from utils.utils import eng_to_arabic_number
 
 updater = Updater(token=BotConfig.bot_token,
                   loop=asyncio.get_event_loop())
-bot = updater.bot
+bot = updater.dispatcher.bot
 dispatcher = updater.dispatcher
 
 my_logger = Logger.logger
@@ -42,22 +40,33 @@ def failure(response, user_data):
         my_logger.error(LogMessage.max_fail_retried, extra={"tag": "error"})
 
 
+def check_user_registration(update, user_peer, user):
+    if user:
+        return user
+    else:
+        general_message = TextMessage(ReadyMessage.not_register)
+        btn_list = [TemplateMessageButton(text=TMessage.register, value=TMessage.register, action=0)]
+        template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+        kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
+                         kwargs=kwargs)
+        dispatcher.finish_conversation(update)
+        return False
+
+
 @dispatcher.message_handler(
     filters=[TemplateResponseFilter(keywords=[TMessage.start, TMessage.back]), TextFilter(keywords="start")])
 def start_conversation(bot, update):
     user_peer = update.get_effective_user()
-    user_id = user_peer.peer_id
-
     general_message = TextMessage(ReadyMessage.start_conversation)
     btn_list = [TemplateMessageButton(text=TMessage.send_tweet, value=TMessage.send_tweet, action=0),
-                TemplateMessageButton(text=TMessage.get_time_line, value=TMessage.get_time_line, action=0),
+                TemplateMessageButton(text=TMessage.get_home_time_line, value=TMessage.get_home_time_line, action=0),
                 TemplateMessageButton(text=TMessage.search, value=TMessage.search, action=0),
                 TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
     template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.finish_conversation(update)
 
 
@@ -72,13 +81,9 @@ def registration(bot, update):
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    dispatcher.register_conversation_next_step_handler(update,
-                                                       [CommandHandler("start", start_conversation),
-                                                        CommandHandler("info", info),
-                                                        MessageHandler(TextFilter(), verify),
-                                                        MessageHandler(DefaultFilter(),
-                                                                       start_conversation),
-                                                        ])
+    dispatcher.register_conversation_next_step_handler(update, [CommandHandler("info", info),
+                                                                MessageHandler(TextFilter(), verify),
+                                                                MessageHandler(DefaultFilter(), start_conversation)])
 
 
 def verify(bot, update):
@@ -89,7 +94,6 @@ def verify(bot, update):
     access_hash = user_peer.access_hash
     final_dict = final_verify(oauth_verifier=oauth_verifier, oauth_token=auth['oauth_token'],
                               oauth_token_secret=auth['oauth_token_secret'])
-
     result = insert_user(user_id=user_id, access_hash=access_hash,
                          final_oauth_token=final_dict.get("final_oauth_token"),
                          final_oauth_token_secret=final_dict.get("final_oauth_token_secret"))
@@ -98,27 +102,15 @@ def verify(bot, update):
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
-        my_logger.info(LogMessage.start, extra={"user_id": user_id, "tag": "info"})
         dispatcher.finish_conversation(update)
-        return None
+        return 0
     general_message = TextMessage(ReadyMessage.success_insert_user)
-
     btn_list = [TemplateMessageButton(text=TMessage.send_tweet, value=TMessage.send_tweet, action=0)]
     template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-
-    my_logger.info(LogMessage.start, extra={"user_id": user_id, "tag": "info"})
-    dispatcher.register_conversation_next_step_handler(update,
-                                                       [CommandHandler("start", start_conversation),
-                                                        CommandHandler("info", info),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.send_tweet),
-                                                            get_tweet_text),
-                                                        MessageHandler(DefaultFilter(),
-                                                                       start_conversation),
-                                                        ])
+    dispatcher.finish_conversation(update)
 
 
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.send_tweet]))
@@ -126,44 +118,18 @@ def get_tweet_text(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
     user = get_user(user_id=user_id)
-    if not user:
-        general_message = TextMessage(ReadyMessage.not_register)
-        btn_list = [TemplateMessageButton(text=TMessage.register, value=TMessage.register, action=0)]
-        template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
-        kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
-        bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
-                         kwargs=kwargs)
-        dispatcher.register_conversation_next_step_handler(update,
-                                                           [CommandHandler("start", start_conversation),
-                                                            CommandHandler("info", info),
-                                                            MessageHandler(
-                                                                TemplateResponseFilter(keywords=TMessage.register),
-                                                                registration),
-                                                            MessageHandler(DefaultFilter(),
-                                                                           start_conversation),
-                                                            ])
-        return None
-
+    if not check_user_registration(update, user_peer, user):
+        return 0
     general_message = TextMessage(ReadyMessage.send_text_twitter)
-
     btn_list = [TemplateMessageButton(text=TMessage.cancel, value=TMessage.cancel, action=0)]
     template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-
-    my_logger.info(LogMessage.start, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
-                                                       [CommandHandler("start", start_conversation),
-                                                        CommandHandler("info", info),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(
-                                                                keywords=[TMessage.back, TMessage.cancel]),
-                                                            start_conversation),
+                                                       [CommandHandler("info", info),
                                                         MessageHandler(TextFilter(), send_tweet),
-                                                        MessageHandler(DefaultFilter(),
-                                                                       start_conversation),
-                                                        ])
+                                                        MessageHandler(DefaultFilter(), start_conversation)])
 
 
 def send_tweet(bot, update):
@@ -182,27 +148,15 @@ def send_tweet(bot, update):
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
-    dispatcher.register_conversation_next_step_handler(update,
-                                                       [CommandHandler("start", start_conversation),
-                                                        CommandHandler("info", info),
-                                                        MessageHandler(DefaultFilter(),
-                                                                       start_conversation)])
+    dispatcher.finish_conversation(update)
 
 
-@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_time_line, TMessage.show_more]))
-def get_time_line(bot, update):
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_home_time_line, TMessage.show_more]))
+def get_home_time_line(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
     user = get_user(user_id=user_id)
-    if not user:
-        general_message = TextMessage(ReadyMessage.not_register)
-        btn_list = [TemplateMessageButton(text=TMessage.register, value=TMessage.register, action=0)]
-        template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
-        kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
-        bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
-                         kwargs=kwargs)
-        dispatcher.finish_conversation(update)
+    if not check_user_registration(update, user_peer, user):
         return 0
     time_line = get_home_time_line(final_oauth_token=user.final_oauth_token,
                                    final_oauth_token_secret=user.final_oauth_token_secret)
@@ -239,7 +193,8 @@ def get_time_line(bot, update):
             ReadyMessage.tweet_message.format(tweet.get("text"),
                                               tweet.get("tweet_link"),
                                               tweet.get("name"), tweet.get("screen_name"),
-                                              eng_to_arabic_number(tweet.get("favorite_count")), eng_to_arabic_number(tweet.get("retweet_count")),
+                                              eng_to_arabic_number(tweet.get("favorite_count")),
+                                              eng_to_arabic_number(tweet.get("retweet_count")),
                                               eng_to_arabic_number(tweet.get("datetime"))
                                               ))
         if a == len(time_line):
@@ -258,8 +213,9 @@ def get_time_line(bot, update):
                                                         CommandHandler("info", info),
                                                         MessageHandler(
                                                             TemplateResponseFilter(
-                                                                keywords=[TMessage.get_time_line, TMessage.show_more]),
-                                                            get_time_line),
+                                                                keywords=[TMessage.get_home_time_line,
+                                                                          TMessage.show_more]),
+                                                            get_home_time_line),
                                                         MessageHandler(DefaultFilter(),
                                                                        start_conversation),
                                                         ])
@@ -292,7 +248,6 @@ def get_search_text(bot, update):
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    my_logger.info(LogMessage.start, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         CommandHandler("info", info),
@@ -337,13 +292,13 @@ def search_tweets(bot, update):
             ReadyMessage.tweet_message.format(status.get("text"),
                                               status.get("tweet_link"),
                                               status.get("name"), status.get("screen_name"),
-                                              eng_to_arabic_number(status.get("favorite_count")), eng_to_arabic_number(status.get("retweet_count")),
+                                              eng_to_arabic_number(status.get("favorite_count")),
+                                              eng_to_arabic_number(status.get("retweet_count")),
                                               ))
         kwargs = {"message": message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
 
-    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         CommandHandler("info", info),
@@ -362,7 +317,6 @@ def info(bot, update):
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.finish_conversation(update)
 
 

@@ -87,7 +87,7 @@ class User(Jsonable):
         sex = json_dict.get('sex', None)
         about = json_dict.get('about', None)
         avatar = Avatar.load_from_json(json_dict.get('avatar', None)) if json_dict.get('avatar', None) else None
-        username = json_dict.get('avatar', None)
+        username = json_dict.get('username', None)
         is_bot = json_dict.get('is_bot', None)
         time_zone = json_dict.get('timeZone', None)
 

@@ -1,5 +1,5 @@
 from balebot.models.constants.message_type import MessageType
-
+from balebot.models.messages.banking import bank_message
 from balebot.models.messages.banking import purchase_message
 from balebot.models.messages import document_message
 from balebot.models.messages import photo_message
@@ -38,6 +38,9 @@ class MessageFactory:
 
         elif message_type == MessageType.template_response_message:
             return template_response_message.TemplateResponseMessage.load_from_json(json_dict)
+
+        elif message_type == MessageType.bank_message:
+            return bank_message.BankMessage.load_from_json(json_dict)
 
         elif message_type == MessageType.document_message:
 
