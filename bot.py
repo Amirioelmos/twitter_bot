@@ -137,9 +137,8 @@ def send_tweet(bot, update):
     user_id = user_peer.peer_id
     tweet_text = update.get_effective_message().text
     user = get_user(user_id=user_id)
-    result = send_tweet_api(final_oauth_token=user.final_oauth_token,
-                            final_oauth_token_secret=user.final_oauth_token_secret, tweet_text=tweet_text)
-    if result:
+    if send_tweet_api(final_oauth_token=user.final_oauth_token,
+                      final_oauth_token_secret=user.final_oauth_token_secret, tweet_text=tweet_text):
         general_message = TextMessage(ReadyMessage.success_tweet)
     else:
         general_message = TextMessage(ReadyMessage.fail_tweet)
@@ -225,7 +224,7 @@ def get_search_text(bot, update):
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("info", info),
                                                         MessageHandler(TextFilter(), search_tweets),
-                                                        MessageHandler(DefaultFilter(), start_conversation) ])
+                                                        MessageHandler(DefaultFilter(), start_conversation)])
 
 
 def search_tweets(bot, update):

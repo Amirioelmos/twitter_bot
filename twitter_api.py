@@ -26,7 +26,7 @@ def send_tweet_api(final_oauth_token, final_oauth_token_secret, tweet_text):
                       final_oauth_token, final_oauth_token_secret)
     try:
         result = twitter.update_status(status=tweet_text)
-        return True
+        return result
     except ValueError:
         return False
 
